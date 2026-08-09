@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세트 상품 환불 계산기</title>
+<style>
+  :root{
+    --bg:#f6f5f2;
+    --card:#ffffff;
+    --ink:#2b2b28;
+    --sub:#7a766e;
+    --accent:#c65d3b;
+    --accent-soft:#f3e4dd;
+    --line:#eae7e0;
+    --good:#2f7a4f;
+  }
+  * { box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding:24px 16px 60px;
+  }
+  .wrap{ max-width:720px; margin:0 auto; }
+  .header-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .reset-top{
+    flex-shrink:0;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:9px 16px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .reset-top:active{ background:var(--accent-soft); border-color:var(--accent); }
+  h1{
+    font-size:20px;
+    margin:0 0 4px;
+  }
+  .desc{
+    color:var(--sub);
+    font-size:13px;
+    line-height:1.6;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-size:15px;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:20px;height:20px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    gap:12px;
+  }
+  .row:last-child{ border-bottom:none; }
+  .row .name{
+    font-size:14px;
+    flex:1;
+  }
+  .row .name small{
+    display:block;
+    color:var(--sub);
+    font-size:12px;
+    margin-top:2px;
+  }
+  .qty{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .qty button{
+    width:28px;height:28px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fafafa;
+    font-size:15px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .qty button:active{ background:var(--accent-soft); }
+  .qty input{
+    width:44px;
+    text-align:center;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:5px 2px;
+    font-size:14px;
+  }
+  .summary{
+    margin-top:14px;
+    background:#faf9f7;
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .summary .line{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    padding:4px 0;
+    color:var(--sub);
+  }
+  .summary .line.total{
+    color:var(--ink);
+    font-weight:700;
+    font-size:15px;
+    border-top:1px solid var(--line);
+    margin-top:6px;
+    padding-top:8px;
+  }
+  .refund-box{
+    background:var(--accent);
+    color:#fff;
+    border-radius:14px;
+    padding:22px 20px;
+    text-align:center;
+  }
+  .refund-box .label{
+    font-size:13px;
+    opacity:0.9;
+    margin-bottom:6px;
+  }
+  .refund-box .amount{
+    font-size:30px;
+    font-weight:800;
+    letter-spacing:-0.5px;
+  }
+  .note{
+    font-size:12px;
+    color:var(--sub);
+    line-height:1.7;
+    margin-top:18px;
+    background:#faf9f7;
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .note b{ color:var(--ink); }
+  .warn{
+    color:#b3492f;
+    font-size:12px;
+    margin-top:6px;
+    display:none;
+  }
+  .reset{
+    display:block;
+    margin:18px auto 0;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--sub);
+    padding:8px 16px;
+    border-radius:20px;
+    font-size:12px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header-row">
+    <div>
+      <h1>세트 상품 환불 계산기</h1>
+      <div class="desc">
+        세트 가격 26,900원 · 3세트 담을 때마다 3,000원 할인(총 수량 기준)<br>
+        원래 주문 수량과 취소할 수량만 입력하면 정확한 환불액이 계산됩니다.
+      </div>
+    </div>
+    <button class="reset-top" onclick="resetAll()">↺ 초기화</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge">1</span> 원래 주문 수량</h2>
+    <div id="orderRows"></div>
+    <div class="summary" id="orderSummary"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge">2</span> 취소할 수량</h2>
+    <div id="cancelRows"></div>
+    <div class="warn" id="warnMsg">⚠ 취소 수량이 주문 수량보다 많습니다.</div>
+    <div class="summary" id="afterSummary"></div>
+  </div>
+
+  <div class="refund-box">
+    <div class="label">환불 금액</div>
+    <div class="amount" id="refundAmount">0원</div>
+  </div>
+
+  <div class="note">
+    <b>계산 방식</b><br>
+    할인은 어떤 특정 세트에 붙어있는 게 아니라 <b>전체 세트 수</b>를 기준으로 3개당 3,000원씩 적용됩니다.<br>
+    그래서 <b>환불액 = 취소 전 결제금액 − 취소 후 남은 주문 결제금액</b> 으로 계산하면,
+    화면상 어느 세트에 할인이 표시되어 있었는지와 상관없이 항상 정확한 금액이 나옵니다.
+  </div>
+
+  <div class="note">
+    <b>⚠ 관리자 화면 그대로 환불하면 안 되는 이유</b><br>
+    주문/CS 관리자 화면의 "상품별할인금액"은 3,000원 할인을 <b>주문된 여러 세트 중 한 줄에만</b> 표시합니다.<br>
+    예) 닭가슴살+볶음밥+닭다리살 3개 주문(할인 3,000원, 닭가슴살 줄에 표시) → 볶음밥·닭다리살 2개를 취소하면
+    그 두 줄은 "할인 0원"으로 찍혀있어서 화면 그대로 더하면 53,800원처럼 보입니다.<br><br>
+    하지만 취소 후 남는 건 닭가슴살 세트 1개뿐이고, 1개는 할인 조건(3개 이상)이 안 됩니다.
+    화면 표시대로 53,800원을 환불하면 남은 1개가 여전히 23,900원(할인 적용 상태)로 남아있는 셈이 되어
+    실제로는 3,000원을 더 돌려주게 됩니다.<br><br>
+    <b>정확한 값 = 취소 전 결제금액(77,700) − 취소 후 남은 주문 결제금액(26,900) = 50,800원</b><br>
+    → 화면의 "상품별할인금액" 숫자는 무시하고, 위 계산기의 환불금액을 기준으로 처리하세요.
+  </div>
+
+</div>
+
+<script>
+const PRICE = 26900;
+const DISCOUNT_UNIT = 3;
+const DISCOUNT_AMOUNT = 3000;
+
+const items = [
+  { key:'soup', name:'마녀스프 세트' },
+  { key:'breast', name:'닭가슴살 세트' },
+  { key:'thigh', name:'닭다리살 세트' },
+  { key:'fried', name:'볶음밥 세트' }
+];
+
+let orderQty = { soup:0, breast:0, thigh:0, fried:0 };
+let cancelQty = { soup:0, breast:0, thigh:0, fried:0 };
+
+function calcTotal(qtyObj){
+  const totalQty = Object.values(qtyObj).reduce((a,b)=>a+b,0);
+  const faceTotal = totalQty * PRICE;
+  const discount = Math.floor(totalQty / DISCOUNT_UNIT) * DISCOUNT_AMOUNT;
+  return { totalQty, faceTotal, discount, payTotal: faceTotal - discount };
+}
+
+function won(n){ return n.toLocaleString('ko-KR') + '원'; }
+
+let orderInputs = {};
+let cancelInputs = {};
+
+function buildRows(containerId, qtyObj){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  const inputs = {};
+  items.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="name">${item.name}<small>${won(PRICE)}</small></div>
+      <div class="qty">
+        <button type="button" data-act="minus" data-key="${item.key}">−</button>
+        <input type="number" min="0" value="${qtyObj[item.key]}" data-key="${item.key}" />
+        <button type="button" data-act="plus" data-key="${item.key}">+</button>
+      </div>
+    `;
+    el.appendChild(row);
+    inputs[item.key] = row.querySelector('input');
+  });
+
+  el.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.key;
+      const delta = btn.dataset.act === 'plus' ? 1 : -1;
+      let next = qtyObj[key] + delta;
+      if(next < 0) next = 0;
+      qtyObj[key] = next;
+      inputs[key].value = next;
+      update();
+    });
+  });
+
+  el.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      let v = parseInt(inp.value, 10);
+      if(isNaN(v) || v < 0) v = 0;
+      qtyObj[inp.dataset.key] = v;
+      update();
+    });
+  });
+
+  return inputs;
+}
+
+function update(){
+  // 취소 수량이 주문 수량을 넘지 않도록 자동 보정 + 화면 동기화
+  items.forEach(item=>{
+    if(cancelQty[item.key] > orderQty[item.key]){
+      cancelQty[item.key] = orderQty[item.key];
+    }
+    if(cancelInputs[item.key]){
+      cancelInputs[item.key].value = cancelQty[item.key];
+      cancelInputs[item.key].max = orderQty[item.key];
+    }
+  });
+  document.getElementById('warnMsg').style.display = 'none';
+
+  const order = calcTotal(orderQty);
+  document.getElementById('orderSummary').innerHTML = `
+    <div class="line"><span>총 세트 수</span><span>${order.totalQty}개</span></div>
+    <div class="line"><span>정가 합계</span><span>${won(order.faceTotal)}</span></div>
+    <div class="line"><span>할인 (3세트당 3,000원)</span><span>-${won(order.discount)}</span></div>
+    <div class="line total"><span>결제 금액</span><span>${won(order.payTotal)}</span></div>
+  `;
+
+  const remaining = {};
+  items.forEach(item=>{
+    let r = orderQty[item.key] - cancelQty[item.key];
+    if(r < 0) r = 0;
+    remaining[item.key] = r;
+  });
+  const after = calcTotal(remaining);
+  const cancelledQtyTotal = order.totalQty - after.totalQty;
+
+  document.getElementById('afterSummary').innerHTML = `
+    <div class="line"><span>취소 세트 수</span><span>${cancelledQtyTotal}개</span></div>
+    <div class="line"><span>취소 후 남은 세트 수</span><span>${after.totalQty}개</span></div>
+    <div class="line"><span>취소 후 남은 결제금액</span><span>${won(after.payTotal)}</span></div>
+    <div class="line total"><span>취소 전 결제금액</span><span>${won(order.payTotal)}</span></div>
+  `;
+
+  const refund = order.payTotal - after.payTotal;
+  document.getElementById('refundAmount').textContent = won(Math.max(refund,0));
+}
+
+function resetAll(){
+  items.forEach(item=>{ orderQty[item.key]=0; cancelQty[item.key]=0; });
+  items.forEach(item=>{
+    orderInputs[item.key].value = 0;
+    cancelInputs[item.key].value = 0;
+  });
+  update();
+}
+
+orderInputs = buildRows('orderRows', orderQty);
+cancelInputs = buildRows('cancelRows', cancelQty);
+update();
+</script>
+</body>
+</html>
